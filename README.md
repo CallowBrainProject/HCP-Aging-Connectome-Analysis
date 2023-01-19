@@ -1,6 +1,6 @@
 # HCP-Aging-Connectome-Analysis
 
-These scripts incorporate diffusion data from the HCP Aging dataset (https://www.humanconnectome.org/study/hcp-lifespan-aging/data-releases). 
+These scripts incorporate diffusion data from the HCP Aging dataset (https://www.humanconnectome.org/study/hcp-lifespan-aging/data-releases). A manuscript using these pipelines have been submitted to neuropsychologia.
 
 Following standard preprocessing approaches employed with mrtix3's standard pipeline we performed probabilistic tractography to obtain connectivity matrix's for each subject using the AAL atlas
 ## AAL atlas information can be found here (https://www.gin.cnrs.fr/en/tools/aal/)
