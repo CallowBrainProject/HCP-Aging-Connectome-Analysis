@@ -7,9 +7,9 @@ Following standard preprocessing approaches employed with mrtix3's standard pipe
 
 Following matrix creation, we utilized python and the brain connectivity toolbox for python to extract graph theory based network measures including nodal strength, transitivity, and global efficiency
 
-### -----------------------------------------
-## Dependencies
-# mrtrix3
-# python
-# FSL
-# Freesurfer
+# -----------------------------------------
+# Dependencies
+ mrtrix3
+ python
+ FSL
+ Freesurfer
