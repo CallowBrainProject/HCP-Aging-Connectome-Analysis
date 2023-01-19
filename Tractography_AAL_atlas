@@ -1,0 +1,50 @@
+#!/bin/tcsh -f
+#SBATCH --time=300:00:00
+#SBATCH --mem=16000
+#SBATCH --cores=4
+
+setenv SUBJECTS_DIR /data/bswift-1/dcallow/aging/freesurfer/
+which module
+
+setenv FSLDIR /data/bswift-0/software/fsl6.0.1
+source ${FSLDIR}/etc/fslconf/fsl.csh
+setenv FREESURFER_HOME /data/bswift-0/software/freesurfer/7.1.0-1/
+source /data/bswift-0/software/freesurfer/7.1.0-1/SetUpFreeSurfer.csh
+
+#Must set SUBJECTS_DIR to where data is or else uses what was set up when installing freesurfer
+source /data/bswift-0/software/loadpython.csh 3.7
+set path = ( $path /data/bswift-0/software/ANTs-2019-11/ANTs-2.1.0-Linux/bin)
+
+@ linenum = 1
+
+set subj= ($argv[1]) \
+
+setenv FSLDIR /data/bswift-0/software/fsl6.0.1
+source ${FSLDIR}/etc/fslconf/fsl.csh
+
+cd /data/bswift-1/dcallow/aging_analysis/${subj}
+setenv SUBJECTS_DIR /data/bswift-1/dcallow/aging/freesurfer
+
+mri_vol2vol --mov /data/bswift-1/dcallow/aging_analysis/${subj}/lowb_brain_corrected.nii.gz --targ ${SUBJECTS_DIR}/${subj}/mri/brain.mgz --inv --interp nearest --o T1_biascorr_brain.nii.gz --reg register.dat --no-save-reg
+mrconvert ${SUBJECTS_DIR}/${subj}/mri/brain.mgz T1.nii.gz
+
+# Label conver AAL file
+flirt -in T1_biascorr_brain.nii.gz -ref /data/bswift-1/dcallow/CONNECTOME/MNI152_T1_1mm_brain.nii.gz -omat highres2standard.mat -interp nearestneighbour -datatype int
+
+convert_xfm -omat standard2highres.mat -inverse highres2standard.mat
+
+flirt -in /data/bswift-1/dcallow/aging/AAL.nii -ref T1_biascorr_brain.nii.gz -out aal2highres.nii.gz -applyxfm -init standard2highres.mat -interp nearestneighbour
+
+#You can then use labelconvert with the resultant file, e.g.
+
+labelconvert -force aal2highres.nii.gz /data/bswift-1/dcallow/aging/aalLUT_90_orig.txt /data/bswift-1/dcallow/aging/aalLUT_90_ordered.txt aal2highres.mif
+
+5ttgen -force fsl T1_biascorr_brain.nii.gz 5TT_fsl.mif -premasked
+labelsgmfix -force aal2highres.mif T1_biascorr_brain.nii.gz /data/bswift-1/dcallow/aging/aalLUT_90_ordered.txt nodes_aal.mif -premasked
+
+#extract mean bo
+tckgen -force -nthreads 4 -act 5TT_fsl.mif -backtrack -crop_at_gmwmi -seed_dynamic /data/bswift-1/dcallow/aging_analysis/${subj}/wmfod.mif -maxlength 250 -select 1M --step 1 -angle 45 -cutoff 0.06 /data/bswift-1/dcallow/aging_analysis/${subj}/wmfod.mif 1M.tck
+tcksift2 -force -nthreads 4 1M.tck /data/bswift-1/dcallow/aging_analysis/${subj}/wmfod.mif -act 5TT_fsl.mif weights_aal.csv
+tck2connectome -force -nthreads 4 1M.tck nodes_aal.mif connectome_aal.csv -tck_weights_in weights_aal.csv -out_assignments assignments_aal.txt -symmetric -zero_diagonal
+cp connectome_aal.csv /data/bswift-1/dcallow/aging/connectome_aal/${subj}_connectome.csv
+---------------------------------------------------------------------------------------
